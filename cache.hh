@@ -11,7 +11,7 @@
 #include "evictor.hh"
 
 class Cache {
- private:
+ private: 
    // All internal data and functionality is hidden using the Pimpl idiom
    // (see here: https://www.fluentcpp.com/2017/09/22/make-pimpl-using-unique_ptr/)
   class Impl;
@@ -64,4 +64,3 @@ class Cache {
   // Delete all data from the cache
   void reset();
 };
-
