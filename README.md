@@ -1,1 +1,1 @@
-# csci389-hw2
+# CSCI 389 Homework 02: Hash it out
