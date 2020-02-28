@@ -3,7 +3,6 @@
 #include "cache.hh"
 
 /*
-
 */
 
 class Cache::Impl {
@@ -52,6 +51,7 @@ class Cache::Impl {
         return false;
       }
       else {
+        m_current_mem -= m_cache_sizes[key];
         m_cache_vals.erase(key);
         m_cache_sizes.erase(key);
         return true;
@@ -63,6 +63,7 @@ class Cache::Impl {
     }
 
     void reset(){
+      m_current_mem = 0;
       m_cache_vals.clear();
       m_cache_sizes.clear();
     }
