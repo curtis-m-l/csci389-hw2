@@ -1,4 +1,5 @@
 #include <unordered_map>
+#include <iostream>
 
 #include "cache.hh"
 
@@ -22,17 +23,22 @@ class Cache::Impl {
     }
 
     void set (key_type key, val_type val, size_type size) {
+      if (size > m_maxmem){
+        std::cout << "Data is too large to fit in the cache!\n";
+        return;
+      }
       auto existing_value = m_cache_vals.find(key);
       if (existing_value != m_cache_vals.end()) {
         size = size - m_cache_sizes.find(key)->second;
       }
       if (m_current_mem + size <= m_maxmem) {
+        std::cout << "Added!";
         m_cache_vals.emplace(key, val);
         m_cache_sizes.emplace(key, size);
         m_current_mem += size;
       }
       else {
-        std::cout << "CACHE IS TOO FULL!\n";
+        std::cout << "Cache is too full!\n";
       }
     }
 

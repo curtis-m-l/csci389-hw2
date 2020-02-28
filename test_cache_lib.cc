@@ -1,46 +1,80 @@
 #include <cassert>
+#include <iostream>
 #include "cache.hh"
 
-void test_set(Cache items, key_type key, val_type val, size_type size)
+void test_set(Cache& items, key_type key, Cache::val_type val, Cache::size_type size)
 {
-    items.set(key, val);
+    items.set(key, val, size);
     //Can't use asserts in this function, would require get. Assert this in main.
 }
 
-void test_get(Cache items, key_type key, size_type itemSize)
+void test_get(Cache& items, key_type key, Cache::size_type itemSize)
 {
-    foo = items.get(key, itemSize)
-    assert(foo != nullptr);
+    Cache::val_type got_item = items.get(key, itemSize);
+    assert(got_item != nullptr);
 }
 
-void test_del(Cache items, key_type key)
+void test_del(Cache& items, key_type key)
 {
-    items.del(key);
-    assert(items.m_cache_vals.find(key) == items.m_cache_vals.end());
+    bool delete_success = items.del(key);
+    assert(delete_success);
 }
 
-void test_space_used(Cache items, size_type target_size)
+void test_space_used(Cache& items, Cache::size_type target_size)
 {
-    foo = items.space_used();
-    assert(foo == target_size);
+    Cache::size_type used_space = items.space_used();
+    assert(used_space == target_size);
 }
 
-void test_reset(Cache items)
+void test_reset(Cache& items)
 {
     items.reset();
-    assert(items.m_cache_vals.size() == 0);
-    assert(items.m_cache_sizes.size() == 0);
+    assert(items.space_used() == 0);
 }
 
 int main()
 {
-    testCache = Cache(100);
-    test_set(testCache, "ItemA", /*?*/, 50);
-    test_set(testCache, "ItemB", /*?*/, 30);
-    test_set(testCache, "ItemC", /*?*/, 20);
+    //Basic tests
+    Cache testCache = Cache(100);
+    //Add A
+    Cache::byte_type dataA = 'A';
+    Cache::val_type pointA = &dataA;
+    test_set(testCache, "ItemA", pointA, 50);
+    std::cout << "Current memory used: " << testCache.space_used() << "\n";
+    //Add B
+    Cache::byte_type dataB = 'B';
+    Cache::val_type pointB = &dataB;
+    test_set(testCache, "ItemB", pointB, 30);
+    std::cout << "Current memory used: " << testCache.space_used() << "\n";
+    //Add C
+    Cache::byte_type dataC = 'C';
+    Cache::val_type pointC = &dataC;
+    test_set(testCache, "ItemC", pointC, 20);
+    std::cout << "Current memory used: " << testCache.space_used() << "\n";
+    //Get B
     test_get(testCache, "ItemB", 30);
+    //Check cache size
     test_space_used(testCache, 100);
+    //Delete A
+    test_del(testCache, "ItemA");
+    //Add D
+    Cache::byte_type dataD = 'D';
+    Cache::val_type pointD = &dataD;
+    test_set(testCache, "ItemD", pointD, 10);
+    std::cout << "Current memory used: " << testCache.space_used() << "\n";
+    //Complex Tests
+    //Modify size of D
+    test_set(testCache, "ItemD", pointD, 40);
+    std::cout << "Current memory used: " << testCache.space_used() << "\n";
+    //Add A (Overflow)
+    test_set(testCache, "ItemA", pointA, 50);
+    std::cout << "Current memory used: " << testCache.space_used() << "\n";
+    //Add A (Way too big)
+    test_set(testCache, "ItemA", pointA, 200);
+    std::cout << "Current memory used: " << testCache.space_used() << "\n";
+    //Get E (which doesn't exist) [Intended Fail]
+    //test_get(testCache, "ItemE", 20);
 
-    ~testCache();
+    testCache.~Cache();
     return 0;
 }
