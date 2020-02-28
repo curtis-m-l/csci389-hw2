@@ -1,5 +1,3 @@
-
-#include <iostream>
 #include <unordered_map>
 
 #include "cache.hh"
@@ -8,7 +6,7 @@
 
 */
 
-class Impl {
+class Cache::Impl {
   public:
     //Our data members:
     size_type m_current_mem;
@@ -20,22 +18,26 @@ class Impl {
     float m_max_load_factor;
     Evictor* m_evictor = nullptr;
 
-    void Impl::set (key_type key, val_type val, size_type size) {
-      existing_value = m_cache_vals.find(key);
+    Impl() {
+      m_current_mem = 0;
+    }
+
+    void set (key_type key, val_type val, size_type size) {
+      auto existing_value = m_cache_vals.find(key);
       if (existing_value != m_cache_vals.end()) {
         size = size - m_cache_sizes.find(key)->second;
       }
-      if (m_current_mem + size <= m_maxmem){
+      if (m_current_mem + size <= m_maxmem) {
         m_cache_vals.emplace(key, val);
         m_cache_sizes.emplace(key, size);
         m_current_mem += size;
       }
       else {
-        std::cout<<"CACHE IS TOO FULL!\n";
+        std::cout << "CACHE IS TOO FULL!\n";
       }
     }
 
-    val_type Impl::get(key_type key, size_type& val_size) const {
+    val_type get(key_type key, size_type& val_size) {
       auto toRe = m_cache_vals.find(key);
       if (toRe == m_cache_vals.end()) {
         return nullptr;
@@ -44,9 +46,9 @@ class Impl {
       return static_cast<val_type>(toRe->second);
     }
 
-    bool Impl::del(key_type key) {
+    bool del(key_type key) {
       auto entry = m_cache_vals.find(key);
-      if (entry = m_cache_vals.end()) {
+      if (entry == m_cache_vals.end()) {
         return false;
       }
       else {
@@ -56,7 +58,7 @@ class Impl {
       }
     }
 
-    size_type Impl::space_used() const {
+    size_type space_used() {
       return m_current_mem;
     }
 
@@ -67,17 +69,28 @@ class Impl {
 };
 
 Cache::Cache(size_type maxmem,
-             float max_load_factor = 0.75,
-             Evictor* evictor = nullptr,
-             auto hasher = std::hash<key_type>()) :
-      pImpl_(new Impl),
-      pImpl_.m_maxmem = maxmem,
-      pImpl_.m_max_load_factor = max_load_factor,
-      pImpl_.m_evictor = evictor,
-      pImpl_.m_hasher = hasher,
-      pImpl_.m_current_mem = 0,
-      std::unordered_map <key_type, val_type> m_cache_vals(m_hasher),
-      std::unordered_map <key_type, size_type> m_cache_sizes()
-{}
+             float max_load_factor,
+             Evictor* evictor,
+             hash_func hasher) {
+  Impl new_Impl;
+  pImpl_ = (std::make_unique<Impl>());
+  pImpl_->m_maxmem = maxmem;
+  pImpl_->m_max_load_factor = max_load_factor;
+  pImpl_->m_evictor = evictor;
+  pImpl_->m_current_mem = 0;
+  std::unordered_map <key_type, val_type> cache_vals;
+  std::unordered_map <key_type, size_type> cache_sizes;
+  pImpl_->m_cache_vals = cache_vals;
+  pImpl_->m_cache_sizes = cache_sizes;
+}
 
-Cache::~Cache() = default;
+void Cache::set(key_type key, val_type val, size_type size) { pImpl_->set(key, val, size); }
+Cache::val_type Cache::get(key_type key, size_type& val_size) const { return pImpl_->get(key, val_size); }
+bool Cache::del(key_type key) { return pImpl_->del(key); }
+Cache::size_type Cache::space_used() const { return pImpl_->space_used(); }
+void Cache::reset() { pImpl_->reset(); }
+
+
+Cache::~Cache() {
+  pImpl_.reset();
+}
