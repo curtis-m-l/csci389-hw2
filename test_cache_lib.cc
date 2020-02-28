@@ -14,7 +14,7 @@ using size_type = uint32_t;
 int main() {
 	/* Tests each member function of Cache for a variety of data loads */
 
-	Cache C (50);
+	Cache C (75);
 
 
 	
