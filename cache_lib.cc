@@ -32,13 +32,34 @@ class Cache::Impl {
         size = size - m_cache_sizes.find(key)->second;
       }
       if (m_current_mem + size <= m_maxmem) {
-        std::cout << "Added!";
+        //std::cout << "Added!";
         m_cache_vals.emplace(key, val);
         m_cache_sizes.emplace(key, size);
         m_current_mem += size;
+        //Newly added to support evictors!
+        m_evictor.touch_key(key);
       }
       else {
-        std::cout << "Cache is too full!\n";
+        //If no evictor, refuse.
+        if (m_evictor == nullptr){
+          std::cout << "Cache is too full!\n";
+        }
+        else{
+          while(m_current_mem + size > m_maxmem){
+            auto evictedKey = m_evictor.evict();
+            m_cache_vals.erase(evictedKey);
+            auto sizeOfEvicted = m_cache_sizes.find(key);
+            m_current_mem -= sizeOfEvicted;
+            m_cache_sizes.erase(evictedKey);
+          }
+          //This is identical to code in an above if statement, since we've now guaranteed
+          //that the data can fit in our cache. Restructuring of this code could yield
+          //more optimal performance, but this should still be correct.
+          m_cache_vals.emplace(key, val);
+          m_cache_sizes.emplace(key, size);
+          m_current_mem += size;
+          m_evictor.touch_key(key);
+        }
       }
     }
 
@@ -48,6 +69,7 @@ class Cache::Impl {
         return nullptr;
       }
       val_size = m_cache_sizes.find(key)->second;
+      std::cout << "Updated ValSize!\n";
       return static_cast<val_type>(toRe->second);
     }
 
