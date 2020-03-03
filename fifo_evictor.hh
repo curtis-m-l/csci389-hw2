@@ -1,7 +1,9 @@
+#pragma once
+
 #include <deque>
 #include "evictor.hh"
 
-class FIFO_Evictor(Evictor){
+class FIFO_Evictor : public Evictor {
 public:
     //Deques are good for dual-ended operations (vectors have no push_front). 
     //https://en.cppreference.com/w/cpp/container/deque
@@ -9,4 +11,4 @@ public:
 
     void touch_key(const key_type& touchedKey);
     const key_type evict();
-}
+};

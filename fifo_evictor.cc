@@ -1,7 +1,9 @@
 #include "fifo_evictor.hh"
 
-class FIFO_Evictor(Evictor){
-public:
+class FIFO_Evictor : public Evictor {
+  public:
+    std::deque<key_type> keys;
+
     void touch_key(const key_type& touchedKey){
         keys.push_front(touchedKey);
     }
@@ -13,4 +15,4 @@ public:
         keys.pop_back();
         return lastVal;
     }
-}
+};

@@ -51,7 +51,7 @@ int main()
     Cache::val_type pointC = &dataC;
     test_set(testCache, "ItemC", pointC, 20);
     std::cout << "Current memory used: " << testCache.space_used() << "\n";
-    //Get B
+    //Get B (ignore last param)
     test_get(testCache, "ItemB", 30);
     //Check cache size
     test_space_used(testCache, 100);
@@ -74,6 +74,19 @@ int main()
     std::cout << "Current memory used: " << testCache.space_used() << "\n";
     //Get E (which doesn't exist) [Intended Fail]
     //test_get(testCache, "ItemE", 20);
+    //reset cache
+    test_reset(testCache);
+    std::cout << "Cache Reset!\n";
+    //Get A (which doesn't exist) [Intended Fail]
+    //test_get(testCache, "ItemA", 30);
+    //Set A, B, and C
+    test_set(testCache, "ItemA", pointA, 25);
+    test_set(testCache, "ItemB", pointB, 35);
+    test_set(testCache, "ItemC", pointC, 10);
+    //Check that get modifies its second last param
+    Cache::size_type gotItemSize = 0;
+    test_get(testCache, "ItemC", gotItemSize);
+    std::cout << "The size of the item is: " << gotItemSize << "\n";
 
     testCache.~Cache();
     return 0;

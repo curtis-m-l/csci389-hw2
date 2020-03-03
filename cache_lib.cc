@@ -10,8 +10,8 @@ class Cache::Impl {
   public:
     //Our data members:
     size_type m_current_mem;
-    std::unordered_map<key_type, val_type> m_cache_vals;
-    std::unordered_map<key_type, size_type> m_cache_sizes;
+    std::unordered_map<key_type, val_type, hash_func> m_cache_vals;
+    std::unordered_map<key_type, size_type, hash_func> m_cache_sizes;
 
     // Initial data members/functions:
     size_type m_maxmem;
@@ -37,7 +37,7 @@ class Cache::Impl {
         m_cache_sizes.emplace(key, size);
         m_current_mem += size;
         //Newly added to support evictors!
-        m_evictor.touch_key(key);
+        m_evictor->touch_key(key);
       }
       else {
         //If no evictor, refuse.
@@ -46,9 +46,9 @@ class Cache::Impl {
         }
         else{
           while(m_current_mem + size > m_maxmem){
-            auto evictedKey = m_evictor.evict();
+            auto evictedKey = m_evictor->evict();
             m_cache_vals.erase(evictedKey);
-            auto sizeOfEvicted = m_cache_sizes.find(key);
+            auto sizeOfEvicted = m_cache_sizes.find(key)->second;
             m_current_mem -= sizeOfEvicted;
             m_cache_sizes.erase(evictedKey);
           }
@@ -58,7 +58,7 @@ class Cache::Impl {
           m_cache_vals.emplace(key, val);
           m_cache_sizes.emplace(key, size);
           m_current_mem += size;
-          m_evictor.touch_key(key);
+          m_evictor->touch_key(key);
         }
       }
     }
@@ -95,6 +95,10 @@ class Cache::Impl {
       m_cache_vals.clear();
       m_cache_sizes.clear();
     }
+
+    void rehash(){
+      //Call the hash function's rehash.
+    }
 };
 
 Cache::Cache(size_type maxmem,
@@ -102,14 +106,14 @@ Cache::Cache(size_type maxmem,
              Evictor* evictor,
              hash_func hasher) {
   Impl new_Impl;
-  pImpl_ = (std::make_unique<Impl>());
+  pImpl_ = (std::make_unique<Impl>(new_Impl));
   pImpl_->m_maxmem = maxmem;
   pImpl_->m_max_load_factor = max_load_factor;
   pImpl_->m_evictor = evictor;
   pImpl_->m_current_mem = 0;
-  std::unordered_map <key_type, val_type> cache_vals;
-  std::unordered_map <key_type, size_type> cache_sizes;
-  pImpl_->m_cache_vals = cache_vals;
+	std::unordered_map<key_type, val_type, hash_func> cache_vals(0, hasher);
+	std::unordered_map<key_type, size_type, hash_func> cache_sizes(0, hasher);
+	pImpl_->m_cache_vals = cache_vals;
   pImpl_->m_cache_sizes = cache_sizes;
 }
 
@@ -118,7 +122,7 @@ Cache::val_type Cache::get(key_type key, size_type& val_size) const { return pIm
 bool Cache::del(key_type key) { return pImpl_->del(key); }
 Cache::size_type Cache::space_used() const { return pImpl_->space_used(); }
 void Cache::reset() { pImpl_->reset(); }
-
+void Cache::rehash() { pImpl_->rehash(); }
 
 Cache::~Cache() {
   pImpl_.reset();
