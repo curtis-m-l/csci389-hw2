@@ -15,7 +15,6 @@ class Cache::Impl {
 
     // Initial data members/functions:
     size_type m_maxmem;
-    float m_max_load_factor;
     Evictor* m_evictor = nullptr;
 
     Impl() {
@@ -23,22 +22,28 @@ class Cache::Impl {
     }
 
     void set (key_type key, val_type val, size_type size) {
+      //If data is larger than cache capacity
       if (size > m_maxmem){
         std::cout << "Data is too large to fit in the cache!\n";
         return;
       }
       auto existing_value = m_cache_vals.find(key);
+      //If value we're emplacing already exists, update size
       if (existing_value != m_cache_vals.end()) {
         size = size - m_cache_sizes.find(key)->second;
       }
+      //If it fits
       if (m_current_mem + size <= m_maxmem) {
         //std::cout << "Added!";
         m_cache_vals.emplace(key, val);
         m_cache_sizes.emplace(key, size);
         m_current_mem += size;
-        //Newly added to support evictors!
-        m_evictor->touch_key(key);
+        //Newly added to support evictors
+        if(m_evictor != nullptr){
+          m_evictor->touch_key(key);
+        }
       }
+      //If it doesn't fit, evict/reject 
       else {
         //If no evictor, refuse.
         if (m_evictor == nullptr){
@@ -69,7 +74,6 @@ class Cache::Impl {
         return nullptr;
       }
       val_size = m_cache_sizes.find(key)->second;
-      std::cout << "Updated ValSize!\n";
       return static_cast<val_type>(toRe->second);
     }
 
@@ -108,11 +112,12 @@ Cache::Cache(size_type maxmem,
   Impl new_Impl;
   pImpl_ = (std::make_unique<Impl>(new_Impl));
   pImpl_->m_maxmem = maxmem;
-  pImpl_->m_max_load_factor = max_load_factor;
   pImpl_->m_evictor = evictor;
   pImpl_->m_current_mem = 0;
 	std::unordered_map<key_type, val_type, hash_func> cache_vals(0, hasher);
 	std::unordered_map<key_type, size_type, hash_func> cache_sizes(0, hasher);
+  cache_vals.max_load_factor(max_load_factor);
+  cache_sizes.max_load_factor(max_load_factor);
 	pImpl_->m_cache_vals = cache_vals;
   pImpl_->m_cache_sizes = cache_sizes;
 }

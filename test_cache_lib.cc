@@ -8,7 +8,7 @@ void test_set(Cache& items, key_type key, Cache::val_type val, Cache::size_type 
     //Can't use asserts in this function, would require get. Assert this in main.
 }
 
-void test_get(Cache& items, key_type key, Cache::size_type itemSize)
+void test_get(Cache& items, key_type key, Cache::size_type& itemSize)
 {
     Cache::val_type got_item = items.get(key, itemSize);
     assert(got_item != nullptr);
@@ -35,7 +35,11 @@ void test_reset(Cache& items)
 int main()
 {
     //Basic tests
-    Cache testCache = Cache(100);
+    Cache::size_type maxmem = 100;
+    float max_load_factor = 0.75; 
+    Cache::size_type gotItemSize = 0;
+    Cache::hash_func testHash = [](key_type key)->Cache::size_type {return static_cast<uint32_t>(key[4]);};
+    Cache testCache = Cache(maxmem, max_load_factor, nullptr, testHash);
     //Add A
     Cache::byte_type dataA = 'A';
     Cache::val_type pointA = &dataA;
@@ -52,7 +56,7 @@ int main()
     test_set(testCache, "ItemC", pointC, 20);
     std::cout << "Current memory used: " << testCache.space_used() << "\n";
     //Get B (ignore last param)
-    test_get(testCache, "ItemB", 30);
+    test_get(testCache, "ItemB", gotItemSize);
     //Check cache size
     test_space_used(testCache, 100);
     //Delete A
@@ -62,6 +66,7 @@ int main()
     Cache::val_type pointD = &dataD;
     test_set(testCache, "ItemD", pointD, 10);
     std::cout << "Current memory used: " << testCache.space_used() << "\n";
+
     //Complex Tests
     //Modify size of D
     test_set(testCache, "ItemD", pointD, 40);
@@ -84,9 +89,11 @@ int main()
     test_set(testCache, "ItemB", pointB, 35);
     test_set(testCache, "ItemC", pointC, 10);
     //Check that get modifies its second last param
-    Cache::size_type gotItemSize = 0;
     test_get(testCache, "ItemC", gotItemSize);
     std::cout << "The size of the item is: " << gotItemSize << "\n";
+
+    //Hash function tests
+    
 
     testCache.~Cache();
     return 0;
