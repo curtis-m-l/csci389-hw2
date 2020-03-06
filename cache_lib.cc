@@ -22,44 +22,45 @@ class Cache::Impl {
     }
 
     void set (key_type key, val_type val, size_type size) {
-      //If data is larger than cache capacity
+      // If data is larger than cache capacity
       if (size > m_maxmem){
         std::cout << "Data is too large to fit in the cache!\n";
         return;
       }
+      // If value we're emplacing already exists, update size
       auto existing_value = m_cache_vals.find(key);
-      //If value we're emplacing already exists, update size
       if (existing_value != m_cache_vals.end()) {
         size = size - m_cache_sizes.find(key)->second;
       }
-      //If it fits
+      // If it fits, add it to the cache 
       if (m_current_mem + size <= m_maxmem) {
-        //std::cout << "Added!";
         m_cache_vals.emplace(key, val);
         m_cache_sizes.emplace(key, size);
         m_current_mem += size;
-        //Newly added to support evictors
-        if(m_evictor != nullptr){
+        // Let the eviction policy know about the new item
+        if(m_evictor != nullptr) {
           m_evictor->touch_key(key);
         }
       }
-      //If it doesn't fit, evict/reject 
       else {
-        //If no evictor, refuse.
-        if (m_evictor == nullptr){
+        // If we have no eviction policy, reject it
+        if (m_evictor == nullptr) {
           std::cout << "Cache is too full!\n";
         }
-        else{
-          while(m_current_mem + size > m_maxmem){
-            auto evictedKey = m_evictor->evict();
+        // Otherwise, evict stuff until it fits
+        else {
+          while(m_current_mem + size > m_maxmem) {
+            key_type evictedKey = m_evictor->evict();
             m_cache_vals.erase(evictedKey);
-            auto sizeOfEvicted = m_cache_sizes.find(key)->second;
-            m_current_mem -= sizeOfEvicted;
+            if (m_cache_sizes.find(evictedKey) != m_cache_sizes.end()) {
+              size_type sizeOfEvicted = m_cache_sizes.find(evictedKey)->second;
+              m_current_mem -= sizeOfEvicted;
+            }
             m_cache_sizes.erase(evictedKey);
           }
-          //This is identical to code in an above if statement, since we've now guaranteed
-          //that the data can fit in our cache. Restructuring of this code could yield
-          //more optimal performance, but this should still be correct.
+          // This is identical to code in an above if statement, since we've now guaranteed
+          // that the data can fit in our cache. Restructuring of this code could yield
+          // more optimal performance, but this should still be correct.
           m_cache_vals.emplace(key, val);
           m_cache_sizes.emplace(key, size);
           m_current_mem += size;
@@ -72,6 +73,9 @@ class Cache::Impl {
       auto toRe = m_cache_vals.find(key);
       if (toRe == m_cache_vals.end()) {
         return nullptr;
+      }
+      if (m_evictor != nullptr) {
+        m_evictor->touch_key(key);
       }
       val_size = m_cache_sizes.find(key)->second;
       return static_cast<val_type>(toRe->second);
@@ -94,14 +98,10 @@ class Cache::Impl {
       return m_current_mem;
     }
 
-    void reset(){
+    void reset() {
       m_current_mem = 0;
       m_cache_vals.clear();
       m_cache_sizes.clear();
-    }
-
-    void rehash(){
-      //Call the hash function's rehash.
     }
 };
 
@@ -109,8 +109,8 @@ Cache::Cache(size_type maxmem,
              float max_load_factor,
              Evictor* evictor,
              hash_func hasher) {
-  Impl new_Impl;
-  pImpl_ = (std::make_unique<Impl>(new_Impl));
+  Impl cache_Impl;
+  pImpl_ = (std::make_unique<Impl>(cache_Impl));
   pImpl_->m_maxmem = maxmem;
   pImpl_->m_evictor = evictor;
   pImpl_->m_current_mem = 0;
@@ -127,8 +127,4 @@ Cache::val_type Cache::get(key_type key, size_type& val_size) const { return pIm
 bool Cache::del(key_type key) { return pImpl_->del(key); }
 Cache::size_type Cache::space_used() const { return pImpl_->space_used(); }
 void Cache::reset() { pImpl_->reset(); }
-void Cache::rehash() { pImpl_->rehash(); }
-
-Cache::~Cache() {
-  pImpl_.reset();
-}
+Cache::~Cache() { pImpl_.reset(); }
