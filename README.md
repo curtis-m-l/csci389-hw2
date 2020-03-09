@@ -1,5 +1,5 @@
 # CSCI 389 Homework 02: Hash it out
-
+Created by Maxx Curtis and Casey Harris
 
 ## Basic Cache Operations:
 
