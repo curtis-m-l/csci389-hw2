@@ -4,9 +4,9 @@
 ## Basic Cache Operations:
 
 Our initial design mainly made use of the standard library's unordered map for
-basic cache operations. We used to unordered maps: one to hold the values stored
-in the cache, and another for the sizes of each object. In retrospect, instead of
-creating a whole new map to hold sizes, we could have made a single unordered map
+basic cache operations. We ended up using two unordered maps: one to hold the values 
+stored in the cache, and another for the sizes of each object. In retrospect, instead 
+of creating a whole new map to hold sizes, we could have made a single unordered map
 full of size-value tuples, but this version is nearly as efficient. The initial 
 design had no evicition policy, and threw out new values as soon as the cache was
 full. (Though it still allowed existing values to be edited if there was space.)
@@ -36,7 +36,7 @@ the average case performance for emplace(), find(), and erase() are all O(1). We
 found out that unordered map uses a hash function, and in addition it allows the
 user to pass it a hash function in its constructor. So if the user passes the cache
 a hash function, the cache constructor passes it to the unordered map. If no function
-is passed, it merely uses the standard library has function std::hash().
+is passed, it merely uses the standard library hash function std::hash().
 
 ## Collision Resolution:
 
