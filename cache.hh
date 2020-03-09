@@ -64,7 +64,5 @@ class Cache {
   // Delete all data from the cache
   void reset();
 
-  //Rehash when max load factor is exceeded.
-  void rehash();
 };
 
