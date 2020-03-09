@@ -128,3 +128,4 @@ bool Cache::del(key_type key) { return pImpl_->del(key); }
 Cache::size_type Cache::space_used() const { return pImpl_->space_used(); }
 void Cache::reset() { pImpl_->reset(); }
 Cache::~Cache() { pImpl_.reset(); }
+#
