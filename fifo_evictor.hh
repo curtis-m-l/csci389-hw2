@@ -14,3 +14,4 @@ class FIFO_Evictor : public Evictor {
     void touch_key(const key_type& touchedKey);
     const key_type evict();
 };
+#
