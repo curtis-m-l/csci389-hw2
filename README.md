@@ -21,7 +21,7 @@ Created by Maxx Curtis and Casey Harris.
 	| test_size_zero_does_not_evict | Test that adding a new element of size zero does not cause eviction | FAILED | FAILED | FAILED | FAILED |
 
 ### Casey/Maxx (Ours):
-	Our code was able to pass all of the non-evictor tests except for 'test reduction' which attempts to reduce the value of
+Our code was able to pass all of the non-evictor tests except for 'test reduction' which attempts to reduce the value of
 	an object in an already full cache. This test mainly exists to make sure that the set() function correctly calculates size
 	before rejecting values, and as it turns out we miscalculated sizes in scenarios where an item's size is reduced.
 	We were unable to pass "evict all" and "test size zero does not evict", and as you'll see in the following paragraphs,
@@ -29,14 +29,14 @@ Created by Maxx Curtis and Casey Harris.
 	find a reason why this might be. As far as we can tell, all four caches fail to account for these scenarios.
 
 ### Aaron/Alex:
-	No linking or compilation errors.
+No linking or compilation errors.
 	Aaron and Alex's code passe all of the non-evictor tests, with the exception of "modify value", in which their 
 	get() command fails to update 'val_size' correctly.
 	They fail to pass any of the evictor tests, which is very odd. We've examined our test code and were unable to find any
 	reason that our code should pass while the other's fail, so these are counted as failures.
 
 ### Jonah/Elijah:
-	Jonah and Elijah's code was the only one (besides ours) to pass test_eviction. This means that their evictor works on its own,
+Jonah and Elijah's code was the only one (besides ours) to pass test_eviction. This means that their evictor works on its own,
 	but there was a problem with connecting the evictor and the cache. We're not sure whether that problem stems from our use of
 	evictors or their implementation, as everyone but us failed all of the evictor tests. Jonah and Elijah's code failed due to
 	apparent double-frees of pointers -- we weren't able to track down the source of the problem.
