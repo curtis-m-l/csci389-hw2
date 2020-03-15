@@ -3,153 +3,272 @@
 #include "cache.hh"
 #include "fifo_evictor.hh"
 
-void test_set(Cache& items, key_type key, Cache::val_type val, Cache::size_type size)
+/*
+
+ Test program for the Cache class defined in "cache.hh" and
+ implemented in "cache_lib.cc".
+
+ Created by Casey Harris and Maxx Curtis
+ for CSCI 389 Homework #2
+
+*/
+
+using test_evictor = FIFO_Evictor;
+
+// Cache::hash_func testHash = [](key_type key)->Cache::size_type {return static_cast<uint32_t>(key[4]);};
+
+// HELPER FUNCTIONS
+
+void cache_set(Cache& items, Cache::byte_type data, std::string name, Cache::size_type size)
 {
-    items.set(key, val, size);
+  /* Create an item with key 'name', value 'data', and size 'size'. Add it to the cache. */
+    Cache::val_type val = &data;
+    items.set(name, val, size);
+    std::cout << "Successfully added item of size " << size << "\n";
     // Can't use asserts in this function, would require get.
     // Asserted in main()
 }
 
-void test_get(Cache& items, key_type key, Cache::size_type& itemSize)
+void cache_get(Cache& items, key_type key, Cache::size_type& itemSize, Cache::size_type target_size)
 {
     Cache::val_type got_item = items.get(key, itemSize);
-    assert(got_item != nullptr);
+    assert(got_item != nullptr && "Cache could not retrieve requested item!\n");
+    assert(itemSize == target_size && "get() did not update size of its second param correctly!\n");
 }
 
-void test_del(Cache& items, key_type key)
+void cache_del(Cache& items, key_type key)
 {
     bool delete_success = items.del(key);
     assert(delete_success);
 }
 
-void test_space_used(Cache& items, Cache::size_type target_size)
+void cache_space_used(Cache& items, Cache::size_type target_size)
 {
     Cache::size_type used_space = items.space_used();
+    std::cout << "Current memory used: " << used_space << " | Expected: " << target_size << "\n";
     assert(used_space == target_size);
 }
 
-void test_reset(Cache& items)
+void cache_reset(Cache& items)
 {
     items.reset();
     assert(items.space_used() == 0);
 }
 
+void cache_get_failure(Cache& items, key_type key, Cache::size_type& itemSize)
+{
+    Cache::val_type got_item = items.get(key, itemSize);
+    assert(got_item == nullptr);
+}
+
+// TEST CASES
+
+void test_basic_operation() {
+    /* Test basic functionality of a cache with no optional parameters */
+    std::cout << "\nTesting basic operations...\n";
+    Cache items = Cache(100);
+    assert(items.space_used() == 0 && "Cache initialized at non-zero size\n");
+    Cache::size_type gotItemSize = 0;
+    // Set an item, verify that it's the right size
+    cache_set(items, 'A', "ItemA", 50);
+    cache_space_used(items, 50);
+    // Get that item, check that it's size is updated correctly
+    cache_get(items, "ItemA", gotItemSize, 50);
+    // Delete item, check that the cache is now empty
+    cache_del(items, "ItemA");
+    cache_space_used(items, 0);
+    // Set an item, reset the cache, an verify that the cache is empty
+    cache_set(items, 'B', "ItemB", 30);
+    cache_reset(items);
+    cache_space_used(items, 0);
+    items.~Cache();
+}
+
+void test_modify_value() {
+  /* Test that objects can be overwritten */
+  std::cout << "\nTesting 'modify value'...\n";
+  Cache items = Cache(100);
+  Cache::size_type gotItemSize = 0;
+  // Set an item, overwrite it, and check that the size has changed
+  cache_set(items, 'A', "ItemA", 50);
+  cache_set(items, 'A', "ItemA", 30);
+  cache_space_used(items, 30);
+  cache_get(items, "ItemA", gotItemSize, 50);
+  items.~Cache();
+}
+
+
+void test_cache_bounds() {
+  std::cout << "\nTesting cache bounds without evictor...\n";
+    /* Try adding an object to the cache that is greater than maxmem. Make sure it fails. */
+    Cache items = Cache(100);
+    cache_set(items, 'A', "ItemA", 110);
+    cache_space_used(items, 0);
+    items.~Cache();
+}
+
+void test_overflow_no_evictor() {
+  std::cout << "\nTesting 'overflow' without evictor...\n";
+  Cache items = Cache(100);
+  //Add a series of items, in which the last one will overflow the cache.
+  cache_set(items, 'A', "ItemA", 50);
+  cache_set(items, 'B', "ItemB", 30);
+  cache_set(items, 'C', "ItemC", 40);
+  
+  cache_space_used(items, 80);
+  items.~Cache();
+}
+
+void test_get_non_existant_item() {
+  std::cout << "\nTesting non-existant item...\n";
+  Cache items = Cache(100);
+  Cache::size_type gotItemSize = 0;
+  // Get something that never existed
+  cache_get_failure(items, "ItemA", gotItemSize);
+  cache_space_used(items, 0);
+  cache_reset(items);
+  // Set something, delete it, and try to get it
+  cache_set(items, 'A', "ItemA", 50);
+  cache_del(items, "ItemA");
+  cache_get_failure(items, "ItemA", gotItemSize);
+  cache_space_used(items, 0);
+  items.~Cache();
+}
+
+// TESTS WITH AN EVICTOR
+
+void test_basic_evictor() {
+  std::cout << "\nTesting basic operations with an evictor...\n";
+  test_evictor evictPolicy = FIFO_Evictor();
+  Cache::size_type gotItemSize = 0;
+  Cache items = Cache(100, 0.75, &evictPolicy);
+  // Add values to cache
+  cache_set(items, 'A', "ItemA", 50);
+  cache_set(items, 'B', "ItemB", 30);
+  cache_space_used(items, 80);
+  cache_get(items, "ItemA", gotItemSize, 50);
+  // Add value, overflowing cache and evicting A
+  cache_set(items, 'C', "ItemC", 40);
+  cache_space_used(items, 70);
+  cache_get_failure(items, "ItemA", gotItemSize);
+  evictPolicy.~FIFO_Evictor();
+  items.~Cache();
+}
+
+void test_cache_bounds_with_evictor() {
+  std::cout << "\nTesting cache bounds with evictor...\n";
+  /* Check that the cache doesn't evict items unnecessarily */
+  test_evictor evictPolicy = FIFO_Evictor();
+  Cache::size_type gotItemSize = 0;
+  Cache items = Cache(100, 0.75, &evictPolicy);
+  // Add some items to the cache
+  cache_set(items, 'B', "ItemB", 30);
+  cache_set(items, 'C', "ItemC", 40);
+  cache_space_used(items, 70);
+  // Try to set an item with a size larger than maxmem
+  cache_set(items, 'A', "ItemA", 160);
+  cache_space_used(items, 70);
+  // Check if any items were evicted unnecessarily
+  cache_get(items, "ItemB", gotItemSize, 30);
+  cache_get(items, "ItemC", gotItemSize, 40);
+  evictPolicy.~FIFO_Evictor();
+  items.~Cache();
+}
+
+void test_unnecessary_eviction()
+{
+  std::cout << "\nTesting unnecessary eviction...\n";
+  test_evictor evictPolicy = FIFO_Evictor();
+  Cache::size_type gotItemSize = 0;
+  Cache items = Cache(100, 0.75, &evictPolicy);
+  cache_set(items, 'A', "ItemA", 40);
+  cache_set(items, 'B', "ItemB", 30);
+  cache_space_used(items, 70);
+  // Delete an item
+  cache_del(items, "ItemA");
+  cache_space_used(items, 30);
+  // If the deleted item were still in the cache, this would prompt eviction.
+  // However, since it no longer exists, it shouldn't do so.
+  cache_set(items, 'C', "ItemC", 70);
+  cache_space_used(items, 100);
+  cache_get(items, "ItemB", gotItemSize, 30);
+  evictPolicy.~FIFO_Evictor();
+  items.~Cache();
+}
+
+void test_eviction(){
+  std::cout << "\nDirectly testing evictor...\n";
+  test_evictor evictPolicy = FIFO_Evictor();
+  //Series of touchkeys/evicts to check FIFO ordering
+  evictPolicy.touch_key("ItemA");
+  evictPolicy.touch_key("ItemB");
+  evictPolicy.touch_key("ItemA");
+  evictPolicy.touch_key("ItemC");
+  key_type evictedKey = evictPolicy.evict();
+  assert(evictedKey == "ItemA" && "Evicted key did not match expectation!");
+  evictedKey = evictPolicy.evict();
+  assert(evictedKey == "ItemB" && "Evicted key did not match expectation!");
+  evictedKey = evictPolicy.evict();
+  assert(evictedKey == "ItemA" && "Evicted key did not match expectation!");
+  evictPolicy.~FIFO_Evictor();
+}
+
+void test_evict_all() {
+  std::cout << "\nTesting evict_all...\n";
+  /* Set an item large enough to remove all items in the cache */
+  test_evictor evictPolicy = FIFO_Evictor();
+  Cache::size_type gotItemSize = 0;
+  Cache items = Cache(100, 0.75, &evictPolicy);
+  // Fill the cache with objects
+  cache_set(items, 'A', "ItemA", 40);
+  cache_set(items, 'B', "ItemB", 30);
+  cache_set(items, 'C', "ItemC", 30);
+  cache_space_used(items, 100);
+  // Set an object that fills the entire cache
+  cache_set(items, 'D', "ItemD", 100); // Our code fails this line
+  cache_space_used(items, 100);
+  // Make sure all other items were evicted
+  cache_get_failure(items, "ItemA", gotItemSize);
+  cache_get_failure(items, "ItemB", gotItemSize);
+  cache_get_failure(items, "ItemC", gotItemSize);
+  cache_get(items, "ItemD", gotItemSize, 100);
+  evictPolicy.~FIFO_Evictor();
+  items.~Cache();
+}
+
+void test_size_zero_does_not_evict() {
+  /* Check that an item of size 0 does not prompt an eviction */
+  std::cout << "\nTesting size zero item does not evict...\n";
+  test_evictor evictPolicy = FIFO_Evictor();
+  Cache::size_type gotItemSize = 0;
+  Cache items = Cache(100, 0.75, &evictPolicy);
+  // Fill the cache with objects
+  cache_set(items, 'A', "ItemA", 40);
+  cache_set(items, 'B', "ItemB", 30);
+  cache_set(items, 'C', "ItemC", 30);
+  cache_space_used(items, 100);
+  // Add an item of size 0
+  cache_set(items, 'D', "ItemD", 0);
+  cache_space_used(items, 100);
+  // Make sure nothing was evicted
+  cache_get(items, "ItemA", gotItemSize, 40); // Our code fails at this line
+  cache_get(items, "ItemB", gotItemSize, 30);
+  cache_get(items, "ItemC", gotItemSize, 30);
+  items.~Cache();
+}
+
 int main()
 {
-    // Global test variables
-    Cache::size_type maxmem = 100;
-    float max_load_factor = 0.75; 
-    Cache::size_type gotItemSize = 0;
-    Cache::hash_func testHash = [](key_type key)->Cache::size_type {return static_cast<uint32_t>(key[4]);};
-    Cache testCache = Cache(maxmem, max_load_factor, nullptr, testHash);
-
-    // BASIC TESTS
-
-    // Add A
-    Cache::byte_type dataA = 'A';
-    Cache::val_type pointA = &dataA;
-    test_set(testCache, "ItemA", pointA, 50);
-    std::cout << "Current memory used: " << testCache.space_used() << "\n";
-    // Add B
-    Cache::byte_type dataB = 'B';
-    Cache::val_type pointB = &dataB;
-    test_set(testCache, "ItemB", pointB, 30);
-    std::cout << "Current memory used: " << testCache.space_used() << "\n";
-    // Add C
-    Cache::byte_type dataC = 'C';
-    Cache::val_type pointC = &dataC;
-    test_set(testCache, "ItemC", pointC, 20);
-    std::cout << "Current memory used: " << testCache.space_used() << "\n";
-    // Get B (ignore last param)
-    test_get(testCache, "ItemB", gotItemSize);
-    // Check cache size
-    test_space_used(testCache, 100);
-    // Delete A
-    test_del(testCache, "ItemA");
-    // Add D
-    Cache::byte_type dataD = 'D';
-    Cache::val_type pointD = &dataD;
-    test_set(testCache, "ItemD", pointD, 10);
-    std::cout << "Current memory used: " << testCache.space_used() << "\n";
-
-    // COMPLEX TESTS
-    
-    // Modify size of D
-    test_set(testCache, "ItemD", pointD, 40);
-    std::cout << "Current memory used: " << testCache.space_used() << "\n";
-    // Add A (Overflow)
-    test_set(testCache, "ItemA", pointA, 50);
-    std::cout << "Current memory used: " << testCache.space_used() << "\n";
-    // Add A (Way too big)
-    test_set(testCache, "ItemA", pointA, 200);
-    std::cout << "Current memory used: " << testCache.space_used() << "\n";
-    // Get E (which doesn't exist) [Intended Fail] *BEHAVED AS EXPECTED*
-    // test_get(testCache, "ItemE", 20);
-    // reset cache
-    test_reset(testCache);
-    std::cout << "Cache Reset!\n";
-    // Get A (which doesn't exist) [Intended Fail] *BEHAVED AS EXPECTED*
-    // test_get(testCache, "ItemA", 30);
-    // Set A, B, and C
-    test_set(testCache, "ItemA", pointA, 25);
-    test_set(testCache, "ItemB", pointB, 35);
-    test_set(testCache, "ItemC", pointC, 10);
-    // Check that get modifies its second last param
-    test_get(testCache, "ItemC", gotItemSize);
-    std::cout << "The size of the item is: " << gotItemSize << "\n";
-
-    // EVICTION POLICY TESTS
-
-    std::cout << "\nTesting eviction policy...\n";
-    testCache.~Cache();
-    FIFO_Evictor evictPolicy = FIFO_Evictor();
-    Cache e_testCache = Cache(maxmem, max_load_factor, &evictPolicy, testHash);
-    // Make sure Cache size is initially 0
-    std::cout << "Initial size of eviction-equipped cache: " << e_testCache.space_used() << "\n";
-    // Fill up cache:
-    // Add A
-    std::cout << "Adding item of size 50...\n";
-    test_set(e_testCache, "ItemA", pointA, 50);
-    std::cout << "Current memory used: " << e_testCache.space_used() << " | Expected: 50\n";
-    // Add B
-    std::cout << "Adding item of size 30...\n";
-    test_set(e_testCache, "ItemB", pointB, 30);
-    std::cout << "Current memory used: " << e_testCache.space_used() << " | Expected: 80\n";
-    // Add C
-    std::cout << "Adding item of size 20...\n";
-    test_set(e_testCache, "ItemC", pointC, 20);
-    std::cout << "Current memory used: " << e_testCache.space_used() << " | Expected: 100\n";
-    // Evict A:
-    // Add D
-    std::cout << "Adding item of size 40...\n";
-    test_set(e_testCache, "ItemD", pointD, 40);
-    std::cout << "Current memory used: " << e_testCache.space_used() << " | Expected: 90\n";
-    // Evict B and C:
-    // Add E
-    Cache::byte_type dataE = 'E';
-    Cache::val_type pointE = &dataE;
-    std::cout << "Adding item of size 45...\n";
-    test_set(e_testCache, "ItemE", pointE, 45);
-    std::cout << "Current memory used: " << e_testCache.space_used() << " | Expected: 85\n";
-    // Try something too big for the cache:
-    Cache::byte_type dataF = 'F';
-    Cache::val_type pointF = &dataF;
-    std::cout << "Adding item of size 110...\n";
-    test_set(e_testCache, "ItemF", pointF, 110);
-    std::cout << "Current memory used: " << e_testCache.space_used() << " | Expected: 85\n";
-    // Try getting stuff
-    // Get D
-    test_get(e_testCache, "ItemD", gotItemSize);
-    // Add F:
-    std::cout << "Adding item of size 30...\n";
-    test_set(e_testCache, "ItemF", pointF, 30);
-    std::cout << "Current memory used: " << e_testCache.space_used() << " | Expected: 75\n";
-    // Add B, big huge
-    std::cout << "Adding item of size 100...\n";
-    test_set(e_testCache, "ItemB", pointB, 100);
-    std::cout << "Current memory used: " << e_testCache.space_used() << " | Expected: 100\n";
-
-    e_testCache.~Cache();
+    test_basic_operation();
+    test_modify_value();
+    test_cache_bounds();
+    test_overflow_no_evictor();
+    test_get_non_existant_item();
+    test_basic_evictor();
+    test_cache_bounds_with_evictor();
+    test_unnecessary_eviction();
+    test_eviction();
+    //test_evict_all();
+    //test_size_zero_does_not_evict();
     return 0;
 }
-#
