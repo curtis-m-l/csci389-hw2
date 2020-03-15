@@ -5,20 +5,20 @@ Created by Maxx Curtis and Casey Harris.
 ## Test Cases/Results:
 
 | Test: | Description: | Casey/Maxx | Aaron/Alex | Jonah/Elijah | Reilly/James |
-	| ---   | ---          | ---        | ---        | ---          | ---          |
-	| test_basic_operation | Performs simple operations with set, get, del, and reset | PASSED | PASSED | PASSED | PASSED |
-	| test_modify | Verifies that the cache can overwwrite existing values without duplication | PASSED | FAILED | FAILED | FAILED |
-	| test_reduction | Tests reducing the size of a cache element | FAILED | PASSED | PASSED | PASSED |
-	| test_set_object_cache_size | Tests adding an element of precisely the size of the cache to an empty cache | PASSED | PASSED | PASSED | PASSED |
-	| test_cache_bounds | Attempts to set an object larger than the size of the cache | PASSED | PASSED | PASSED | PASSED |
-	| test_overflow_no_evictor | Tests functionality when the cache overflows without an evictor | PASSED | PASSED | PASSED | PASSED |
-	| test_get_nonexistant_item | Attempts to get an item that never existed, and another that was deleted | PASSED | PASSED | PASSED | PASSED |
-	| test_basic_evictor | Performs basic operations on a cache that has an eviction policy, but does not prompt an eviction | PASSED | FAILED | FAILED | FAILED |
-	| test_cache_bounds_with_evictor | Tests functionality when the cache overflows with an evictor | PASSED | FAILED | FAILED | FAILED |
-	| test_uneccessary_eviction | Tests whether evictons occur when the cache should not evict | PASSED | FAILED | FAILED | FAILED |
-	| test_eviction | Directly tests 'touch_key' and 'evict' without using the cache API | PASSED | FAILED | PASSED | FAILED |
-	| test_evict_all | Tests functionality when evicting the entire cache is required | FAILED | FAILED | FAILED | FAILED |
-	| test_size_zero_does_not_evict | Test that adding a new element of size zero does not cause eviction | FAILED | FAILED | FAILED | FAILED |
+| ---   | ---          | ---        | ---        | ---          | ---          |
+| test_basic_operation | Performs simple operations with set, get, del, and reset | PASSED | PASSED | PASSED | PASSED |
+| test_modify | Verifies that the cache can overwwrite existing values without duplication | PASSED | FAILED | FAILED | FAILED |
+| test_reduction | Tests reducing the size of a cache element | FAILED | PASSED | PASSED | PASSED |
+| test_set_object_cache_size | Tests adding an element of precisely the size of the cache to an empty cache | PASSED | PASSED | PASSED | PASSED |
+| test_cache_bounds | Attempts to set an object larger than the size of the cache | PASSED | PASSED | PASSED | PASSED |
+| test_overflow_no_evictor | Tests functionality when the cache overflows without an evictor | PASSED | PASSED | PASSED | PASSED |
+| test_get_nonexistant_item | Attempts to get an item that never existed, and another that was deleted | PASSED | PASSED | PASSED | PASSED |
+| test_basic_evictor | Performs basic operations on a cache that has an eviction policy, but does not prompt an eviction | PASSED | FAILED | FAILED | FAILED |
+| test_cache_bounds_with_evictor | Tests functionality when the cache overflows with an evictor | PASSED | FAILED | FAILED | FAILED |
+| test_uneccessary_eviction | Tests whether evictons occur when the cache should not evict | PASSED | FAILED | FAILED | FAILED |
+| test_eviction | Directly tests 'touch_key' and 'evict' without using the cache API | PASSED | FAILED | PASSED | FAILED |
+| test_evict_all | Tests functionality when evicting the entire cache is required | FAILED | FAILED | FAILED | FAILED |
+| test_size_zero_does_not_evict | Test that adding a new element of size zero does not cause eviction | FAILED | FAILED | FAILED | FAILED |
 
 ### Casey/Maxx (Ours):
 Our code was able to pass all of the non-evictor tests except for 'test reduction' which attempts to reduce the value of
