@@ -97,6 +97,32 @@ void test_modify_value() {
   items.~Cache();
 }
 
+void test_reduction() {
+  /* Checks that modifying an object does not prompt a rejection/eviction for some reason */
+  std::cout << "\nTesting 'reduction'...\n";
+  Cache items = Cache(100);
+  Cache::size_type gotItemSize = 0;
+  // Fill the cache
+  cache_set(items, 'A', "ItemA", 40);
+  cache_set(items, 'B', "ItemB", 30);
+  cache_set(items, 'C', "ItemC", 30);
+  // Make one of the existing values smaller
+  cache_set(items, 'A', "ItemA", 25);
+  // Verify that it was not rejected
+  cache_get(items, "ItemA", gotItemSize, 25);
+  items.~Cache();
+}
+
+void test_set_object_cache_size() {
+  /* Sets an object of size 'maxmem' and verifies that it was added properly */
+  std::cout << "\nTesting 'set object of cache size'...\n";
+  Cache items = Cache(100);
+  // Set an item that fills the entire cache
+  cache_set(items, 'A', "ItemA", 100);
+  // Check that it worked
+  cache_space_used(items, 100);
+  items.~Cache();
+}
 
 void test_cache_bounds() {
   std::cout << "\nTesting cache bounds without evictor...\n";
@@ -261,6 +287,8 @@ int main()
 {
     test_basic_operation();
     test_modify_value();
+    test_reduction();
+    test_set_object_cache_size();
     test_cache_bounds();
     test_overflow_no_evictor();
     test_get_non_existant_item();
@@ -268,7 +296,7 @@ int main()
     test_cache_bounds_with_evictor();
     test_unnecessary_eviction();
     test_eviction();
-    //test_evict_all();
-    //test_size_zero_does_not_evict();
+    test_evict_all();
+    test_size_zero_does_not_evict();
     return 0;
 }
