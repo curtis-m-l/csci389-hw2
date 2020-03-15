@@ -1,60 +1,49 @@
-# CSCI 389 Homework 02: Hash it out
+# CSCI 389 Homework 03: Hash it out
 Created by Maxx Curtis and Casey Harris.
 
-## Basic Cache Operations:
 
-Our initial design mainly made use of the standard library's unordered map for
-basic cache operations. We ended up using two unordered maps: one to hold the values 
-stored in the cache, and another for the sizes of each object. In retrospect, instead 
-of creating a whole new map to hold sizes, we could have made a single unordered map
-full of size-value tuples, but this version is nearly as efficient. The initial 
-design had no evicition policy, and threw out new values as soon as the cache was
-full. (Though it still allowed existing values to be edited if there was space.)
-set(), get(), and del() make use of the unordered map operations emplace() find(),
-and erase() respectively to interact with the cache. reset() merely used the
-unordered map operation clear() to empty both maps after resetting m_current_mem.
+## Test Cases/Results:
 
+	| Test: | Description: | Casey/Maxx | Aaron/Alex | Jonah/Elijah | Reilly/James |
+	| ---   | ---          | ---        | ---        | ---          | ---          |
+	| test_basic_operation | Performs simple operations with set, get, del, and reset | PASSED | PASSED | PASSED | PASSED |
+	| test_modify | Verifies that the cache can overwwrite existing values without duplication | PASSED | FAILED | FAILED | FAILED |
+	| test_reduction | Tests reducing the size of a cache element | FAILED | PASSED | PASSED | PASSED |
+	| test_set_object_cache_size | Tests adding an element of precisely the size of the cache to an empty cache | PASSED | PASSED | PASSED | PASSED |
+	| test_cache_bounds | Attempts to set an object larger than the size of the cache | PASSED | PASSED | PASSED | PASSED |
+	| test_overflow_no_evictor | Tests functionality when the cache overflows without an evictor | PASSED | PASSED | PASSED | PASSED |
+	| test_get_nonexistant_item | Attempts to get an item that never existed, and another that was deleted | PASSED | PASSED | PASSED | PASSED |
+	| test_basic_evictor | Performs basic operations on a cache that has an eviction policy, but does not prompt an eviction | PASSED | FAILED | FAILED | FAILED |
+	| test_cache_bounds_with_evictor | Tests functionality when the cache overflows with an evictor | PASSED | FAILED | FAILED | FAILED |
+	| test_uneccessary_eviction | Tests whether evictons occur when the cache should not evict | PASSED | FAILED | FAILED | FAILED |
+	| test_eviction | Directly tests 'touch_key' and 'evict' without using the cache API | PASSED | FAILED | PASSED | FAILED |
+	| test_evict_all | Tests functionality when evicting the entire cache is required | FAILED | FAILED | FAILED | FAILED |
+	| test_size_zero_does_not_evict | Test that adding a new element of size zero does not cause eviction | FAILED | FAILED | FAILED | FAILED |
 
-## Testing:
+###Casey/Maxx (Ours):
+	Our code was able to pass all of the non-evictor tests except for 'test reduction' which attempts to reduce the value of
+	an object in an already full cache. This test mainly exists to make sure that the set() function correctly calculates size
+	before rejecting values, and as it turns out we miscalculated sizes in scenarios where an item's size is reduced.
+	We were unable to pass "evict all" and "test size zero does not evict", and as you'll see in the following paragraphs,
+	no one else was either. This implies that our test code is bugged somehow, but after closer examinination we were unable to
+	find a reason why this might be. As far as we can tell, all four caches fail to account for these scenarios.
 
-Our test program is fairly simple. It consists mainly of a series of test functions
-and a large list of possible scenarios. Such as:
-	- Basic operations, such as set(), get(), and delete() on a basic set of data
-	- Modifying the size of existing values
-	- Using set() to overflow the cache
-	- Resizing stored values to overflow the cache
-	- Setting values larger than the cache size
-	- Getting elements that don't exist
-	- Deleting elements that don't exist
-	- Checking that get() returns the correct size
+###Aaron/Alex:
+	No linking or compilation errors.
+	Aaron and Alex's code passe all of the non-evictor tests, with the exception of "modify value", in which their 
+	get() command fails to update 'val_size' correctly.
+	They fail to pass any of the evictor tests, which is very odd. We've examined our test code and were unable to find any
+	reason that our code should pass while the other's fail, so these are counted as failures.
 
+###Jonah/Elijah:
+	Jonah and Elijah's code was the only one (besides ours) to pass test_eviction. This means that their evictor works on its own,
+	but there was a problem with connecting the evictor and the cache. We're not sure whether that problem stems from our use of
+	evictors or their implementation, as everyone but us failed all of the evictor tests. Jonah and Elijah's code failed due to
+	apparent double-frees of pointers -- we weren't able to track down the source of the problem.
 
-## Performance: 
+	They also failed test_modify, meaning their code was poorly equipped to handle changing the size of an individual element in
+	the cache. Interestingly, the cache updated its size correctly, but when we called get() the second parameter of that 
+	function did not update correctly.
 
-According to the official documentation for the standard library's unordered map,
-the average case performance for emplace(), find(), and erase() are all O(1). We
-found out that unordered map uses a hash function, and in addition it allows the
-user to pass it a hash function in its constructor. So if the user passes the cache
-a hash function, the cache constructor passes it to the unordered map. If no function
-is passed, it merely uses the standard library hash function std::hash().
-
-## Collision Resolution:
-
-Unordered map already uses seperate chaining to handle collision resolution, and
-we didn't see any reason to change that. This is evidenced by the unordered map
-member bucket_size, which returns the number of objects stored in a particular bucket
-based on its hash value.
-
-## Dynamic Resizing:
-
-Our cache makes use of the unordered map operation rehash() to handle resizing.
-If the user passes a load factor, the cache constructor passes it to the unordered 
-maps using max_load_factor().
-
-## Eviction Policy:
+###Reilly/James:
 	
-To allow the user to pass their own evicition policy, we added a series of checks to
-set() to handle scenarios in which values need to be evicted, and one extra check in
-get() which lets the Evictor know when a value has been touched. This last check
-mainly exists to allow for an LRU eviction policy, but we didn't end up implementing
-one. All of our tests surrounding eviction focus on a simple FIFO policy.
