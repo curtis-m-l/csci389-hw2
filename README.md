@@ -37,13 +37,11 @@ No linking or compilation errors.
 
 ### Jonah/Elijah:
 Jonah and Elijah's code was the only one (besides ours) to pass test_eviction. This means that their evictor works on its own,
-	but there was a problem with connecting the evictor and the cache. We're not sure whether that problem stems from our use of
-	evictors or their implementation, as everyone but us failed all of the evictor tests. Jonah and Elijah's code failed due to
-	apparent double-frees of pointers -- we weren't able to track down the source of the problem.
+but there was a problem with connecting the evictor and the cache, resulting in the failure of the other evictor tests. We're not sure whether that problem stems from our use of evictors or their implementation, as everyone but us failed all of the evictor tests. Jonah and Elijah's code failed due to apparent double-frees of pointers -- we weren't able to track down the source of the problem.
 
-They also failed test_modify, meaning their code was poorly equipped to handle changing the size of an individual element in
-	the cache. Interestingly, the cache updated its size correctly, but when we called get() the second parameter of that 
-	function did not update correctly.
+They also failed test_modify, meaning their code was poorly equipped to handle changing the size of an individual element in the cache. Interestingly, the cache updated its size correctly, but when we called get() the second parameter of that  function did not update correctly. They did pass the same series of asserts when we updated an element of the cache to be a smaller size, however.
 
 ### Reilly/James:
-	
+Like Jonah and Elijah's code, Reilly and James' evictor tests failed due to double-freeing pointers. In addition, their code raised issues when modifying a value in the cache, but passed when the object's replacement was a smaller size. (It also failed in the same manner, where the second parameter of a get function failed to update correctly. I swear I tested these files separately. --Casey)
+
+However, one notable difference is that this code also failed the direct test of the evictor due to pointer double-frees. This hints to us that the issue probably resides in their code for that one, instead of the construction of our test. 
